@@ -2,5 +2,5 @@ package csharp
 
 import "embed"
 
-//go:embed *.cs.tmpl
+//go:embed *.go.tmpl
 var FS embed.FS
