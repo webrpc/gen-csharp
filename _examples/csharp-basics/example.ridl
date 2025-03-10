@@ -1,0 +1,111 @@
+webrpc = v1             # version of webrpc schema format (ridl or json)
+
+name = example          # name of your backend app
+version = v0.0.1        # version of your schema
+
+# user role
+# which defines which type of operations user can do
+enum Kind: uint32
+  - USER # user can only see number of transactions
+    # admin permissions
+    # can manage transactions
+    # revert transactions
+    # see analytics dashboard
+  - ADMIN
+
+enum Intent: string
+  - openSession
+  - closeSession
+  - validateSession
+
+# Defines users within out wallet app
+struct User
+  - id: uint64
+    + go.field.name = ID
+    + go.tag.db = id
+
+  - uuid: string
+    + go.tag.db = id
+    + go.field.type = uuid.UUID
+    + go.type.import = github.com/google/uuid
+
+  # unique identifier of the user
+  - username: string # must be unique !
+    + json = USERNAME
+    + go.tag.db = username
+
+  - role: string
+    + go.tag.db = -
+
+  - nicknames: []Nickname
+    + go.tag.db = "-"
+    + go.field.type = []Nickname
+
+  - createdAt: timestamp
+    + go.tag.db = created_at
+    
+  - updatedAt?: timestamp
+    + go.tag.db = updated_at
+
+  - kind: Kind
+
+  - intent: Intent
+
+struct Nickname
+  - ID: uint64
+    + go.tag.db = id
+  - nickname: string
+    + go.tag.db = nickname
+  - createdAt: timestamp
+    + go.tag.db = created_at
+  - updatedAt?: timestamp
+    + go.tag.db = updated_at
+
+struct SearchFilter
+  - q: string
+
+struct Version
+  - webrpcVersion: string
+  - schemaVersion: string
+  - schemaHash: string
+  - clientGenVersion: GenVersions
+  - serverGenVersion: GenVersions
+
+struct ComplexType
+  - meta: map<string,any>
+  - metaNestedExample: map<string,map<string,uint32>>
+  - namesList: []string
+  - numsList: []int64
+  - doubleArray: [][]string
+  - listOfMaps: []map<string,uint32>
+  - listOfUsers: []User
+  - mapOfUsers: map<string,User>
+  - user: User
+
+struct GenVersions
+  - WebrpcGenVersion: string
+  - TmplTarget: string
+  - TmplVersion: string
+  - SchemaVersion: string
+
+error 500100 MissingArgument "missing argument"
+error 500101 InvalidUsername "invalid username"
+error 400100 MemoryFull      "system memory is full"
+error 400200 Unauthorized    "unauthorized" HTTP 401
+error 400300 UserNotFound    "user not found"
+
+service ExampleService
+  - Ping()
+  # Status endpoint
+  #
+  # gives you current status of running application
+  @internal
+  - Status() => (status: bool)
+  - Version() => (version: Version)
+  # Get user endpoint
+  #
+  # gives you basic info about user
+  @deprecated
+  - GetUser(header: map<string,string>, userID: uint64) => (user: User)
+  - FindUser(s: SearchFilter) => (name: string, user: User)
+  - LogEvent(event: string)
